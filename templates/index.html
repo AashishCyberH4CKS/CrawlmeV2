@@ -1,0 +1,2380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrawlMe Pro - Advanced Web Crawler Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #080c10;
+            --panel-bg: rgba(13, 20, 30, 0.75);
+            --panel-border: rgba(255, 170, 0, 0.15);
+            --panel-border-glow: rgba(255, 170, 0, 0.3);
+            
+            --gold: #ffaa00;
+            --gold-glow: rgba(255, 170, 0, 0.5);
+            --green: #00ff66;
+            --green-glow: rgba(0, 255, 102, 0.4);
+            --red: #ff3344;
+            --red-glow: rgba(255, 51, 68, 0.4);
+            --blue: #00ccff;
+            --blue-glow: rgba(0, 204, 255, 0.4);
+            
+            --text-main: #e2e8f0;
+            --text-muted: #8892b0;
+            --text-dark: #0a0e14;
+            
+            --font-display: 'Outfit', 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            
+            --shadow-glow: 0 0 15px var(--panel-border-glow);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(255, 170, 0, 0.03) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(0, 255, 102, 0.03) 0px, transparent 50%),
+                linear-gradient(rgba(10, 15, 24, 0.95), rgba(10, 15, 24, 0.95));
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.5;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        a {
+            color: var(--blue);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        a:hover {
+            color: var(--gold);
+            text-shadow: 0 0 8px var(--gold-glow);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 170, 0, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 170, 0, 0.6);
+        }
+
+        /* Layout */
+        .container {
+            width: 98%;
+            max-width: 1750px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        /* Header */
+        header {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-glow);
+            position: relative;
+            overflow: hidden;
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), var(--green), var(--blue), var(--gold));
+            background-size: 300% 100%;
+            animation: borderGrad 8s linear infinite;
+        }
+
+        @keyframes borderGrad {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+
+        .header-title h1 {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--gold);
+            text-shadow: 0 0 10px var(--gold-glow);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-title p {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+        }
+        .status-badge.stopped {
+            border-color: var(--red);
+            color: var(--red);
+            box-shadow: inset 0 0 8px rgba(255, 51, 68, 0.1), 0 0 8px rgba(255, 51, 68, 0.15);
+        }
+        .status-badge.scanning {
+            border-color: var(--green);
+            color: var(--green);
+            box-shadow: inset 0 0 8px rgba(0, 255, 102, 0.1), 0 0 8px rgba(0, 255, 102, 0.15);
+            animation: pulseGlow 1.5s infinite alternate;
+        }
+        .status-badge.paused {
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: inset 0 0 8px rgba(255, 170, 0, 0.1), 0 0 8px rgba(255, 170, 0, 0.15);
+        }
+        .status-badge.completed {
+            border-color: var(--blue);
+            color: var(--blue);
+            box-shadow: inset 0 0 8px rgba(0, 204, 255, 0.1), 0 0 8px rgba(0, 204, 255, 0.15);
+        }
+
+        @keyframes pulseGlow {
+            from { box-shadow: inset 0 0 8px rgba(0, 255, 102, 0.1), 0 0 5px rgba(0, 255, 102, 0.1); }
+            to { box-shadow: inset 0 0 12px rgba(0, 255, 102, 0.2), 0 0 15px rgba(0, 255, 102, 0.3); }
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glassmorphic Panel Styles */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-glow);
+        }
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px dashed rgba(255, 170, 0, 0.2);
+            padding-bottom: 10px;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-control {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 170, 0, 0.2);
+            border-radius: 6px;
+            color: var(--text-main);
+            padding: 10px 14px;
+            font-family: var(--font-display);
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 8px rgba(255, 170, 0, 0.25);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-container input[type="range"] {
+            flex: 1;
+            accent-color: var(--gold);
+            height: 5px;
+            border-radius: 5px;
+            outline: none;
+        }
+        .slider-val {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--gold);
+            min-width: 24px;
+            text-align: right;
+        }
+
+        /* Checkbox Switch */
+        .switch-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 22px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .3s;
+            border-radius: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-muted);
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: rgba(0, 255, 102, 0.15);
+            border-color: var(--green);
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+            background-color: var(--green);
+            box-shadow: 0 0 8px var(--green-glow);
+        }
+
+        /* Buttons Grid */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 24px;
+        }
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn {
+            border: 1px solid transparent;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-primary {
+            background: rgba(0, 255, 102, 0.08);
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: var(--green);
+            color: var(--text-dark);
+            box-shadow: 0 0 15px var(--green-glow);
+        }
+        .btn-warning {
+            background: rgba(255, 170, 0, 0.08);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        .btn-warning:hover:not(:disabled) {
+            background: var(--gold);
+            color: var(--text-dark);
+            box-shadow: 0 0 15px var(--gold-glow);
+        }
+        .btn-danger {
+            background: rgba(255, 51, 68, 0.08);
+            border-color: var(--red);
+            color: var(--red);
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: var(--red);
+            color: var(--text-dark);
+            box-shadow: 0 0 15px var(--red-glow);
+        }
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.05);
+            background: rgba(0,0,0,0.2);
+            color: var(--text-muted);
+        }
+
+        /* Stats Cards Block */
+        .stats-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(10, 15, 22, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .stat-card:hover {
+            border-color: rgba(255, 170, 0, 0.2);
+        }
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--text-muted);
+        }
+        .stat-card.crawled::after { background-color: var(--blue); }
+        .stat-card.emails::after { background-color: var(--gold); }
+        .stat-card.phones::after { background-color: var(--green); }
+        .stat-card.socials::after { background-color: var(--red); }
+        
+        .stat-card .label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-card .value {
+            font-size: 28px;
+            font-family: var(--font-display);
+            font-weight: 800;
+            margin-top: 4px;
+            color: var(--text-main);
+        }
+        .stat-card.crawled .value { color: var(--blue); text-shadow: 0 0 10px rgba(0, 204, 255, 0.15); }
+        .stat-card.emails .value { color: var(--gold); text-shadow: 0 0 10px rgba(255, 170, 0, 0.15); }
+        .stat-card.phones .value { color: var(--green); text-shadow: 0 0 10px rgba(0, 255, 102, 0.15); }
+        .stat-card.socials .value { color: var(--red); text-shadow: 0 0 10px rgba(255, 51, 68, 0.15); }
+
+        /* Tech & Aux Info Panel */
+        .aux-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .aux-stat {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        .aux-stat .val {
+            font-family: var(--font-mono);
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+        .aux-stat .lbl {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Split Section: Log and Chart */
+        .middle-section {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 768px) {
+            .middle-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Console Terminal Style */
+        .terminal-container {
+            display: flex;
+            flex-direction: column;
+            background: #04070a;
+            border: 1px solid rgba(255, 170, 0, 0.15);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+        .terminal-header {
+            background: rgba(13, 20, 30, 0.9);
+            border-bottom: 1px solid rgba(255, 170, 0, 0.1);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .terminal-header .title {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .terminal-dots {
+            display: flex;
+            gap: 6px;
+        }
+        .terminal-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.1);
+        }
+        .terminal-dot.r { background-color: var(--red); }
+        .terminal-dot.y { background-color: var(--gold); }
+        .terminal-dot.g { background-color: var(--green); }
+        
+        .terminal-body {
+            height: 240px;
+            overflow-y: auto;
+            padding: 15px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: #39ff14;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background-color: #030508;
+            box-shadow: inset 0 0 15px rgba(0, 255, 102, 0.05);
+        }
+        .terminal-line {
+            word-break: break-all;
+            white-space: pre-wrap;
+            opacity: 0.95;
+        }
+        .terminal-line.err { color: var(--red); }
+        .terminal-line.warn { color: var(--gold); }
+        .terminal-line.info { color: var(--blue); }
+        .terminal-line.success { color: var(--green); }
+
+        /* Chart container */
+        .chart-card {
+            background: rgba(10, 15, 22, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+        .chart-card .title {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            width: 100%;
+            text-align: center;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 180px;
+            width: 180px;
+        }
+
+        /* Findings Tab Panel */
+        .tabs-header {
+            display: flex;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 20px;
+            overflow-x: auto;
+            gap: 6px;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-muted);
+            padding: 10px 18px;
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tab-btn:hover {
+            color: var(--gold);
+        }
+        .tab-btn.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+            text-shadow: 0 0 8px var(--gold-glow);
+        }
+        .tab-btn .badge {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-muted);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-family: var(--font-mono);
+        }
+        .tab-btn.active .badge {
+            background: rgba(255, 170, 0, 0.15);
+            color: var(--gold);
+        }
+
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .tab-action-bar .title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.03);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-sm:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 8px rgba(255,170,0,0.2);
+        }
+
+        .global-exports {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Findings Table Style */
+        .table-wrapper {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 6px;
+            background: rgba(0,0,0,0.15);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+        th, td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        th {
+            background: rgba(0,0,0,0.4);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+        td.badge-cell {
+            font-family: var(--font-mono);
+            font-size: 11px;
+        }
+        .td-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .td-badge.status-200 { background: rgba(0, 255, 102, 0.1); color: var(--green); border: 1px solid rgba(0,255,102,0.2); }
+        .td-badge.status-error { background: rgba(255, 51, 68, 0.1); color: var(--red); border: 1px solid rgba(255,51,68,0.2); }
+        .td-badge.status-other { background: rgba(255, 170, 0, 0.1); color: var(--gold); border: 1px solid rgba(255,170,0,0.2); }
+
+        .list-items-flex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 0;
+        }
+        .flex-badge {
+            background: rgba(255, 170, 0, 0.08);
+            border: 1px solid rgba(255, 170, 0, 0.2);
+            color: var(--gold);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .flex-badge.tech {
+            background: rgba(0, 204, 255, 0.08);
+            border-color: rgba(0, 204, 255, 0.2);
+            color: var(--blue);
+        }
+        .flex-badge.sensitive {
+            background: rgba(255, 51, 68, 0.08);
+            border-color: rgba(255, 51, 68, 0.2);
+            color: var(--red);
+            font-weight: 600;
+            animation: textRedPulse 1.5s infinite alternate;
+        }
+        @keyframes textRedPulse {
+            from { box-shadow: 0 0 2px rgba(255, 51, 68, 0.1); }
+            to { box-shadow: 0 0 8px rgba(255, 51, 68, 0.3); }
+        }
+
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-family: var(--font-mono);
+        }
+
+        /* Banner credits styling */
+        .creator-watermark {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 40px;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h1>🕷️ CRAWLME PRO</h1>
+                <p>Advanced Cyber Intelligence & Content Extraction Engine • By AashishCyberH4CKS</p>
+            </div>
+            
+            <div class="status-badge stopped" id="global-status-badge">
+                <span class="status-dot"></span>
+                <span id="global-status-text">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            
+            <!-- Sidebar controls & Console -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Sidebar controls -->
+                <div class="panel">
+                    <div class="panel-title">
+                        <span>⚙️</span> CONFIGURE TARGET
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="input-url">Seed URL</label>
+                        <input type="text" id="input-url" class="form-control" placeholder="https://example.com" value="">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="input-max-pages">Max Pages</label>
+                            <input type="number" id="input-max-pages" class="form-control" value="50" min="5" max="500">
+                        </div>
+                        <div class="form-group">
+                            <label for="input-user-agent">User-Agent</label>
+                            <select id="input-user-agent" class="form-control">
+                                <option value="ethical">Ethical Crawler</option>
+                                <option value="chrome">Google Chrome</option>
+                                <option value="firefox">Mozilla Firefox</option>
+                                <option value="safari">Apple Safari</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Max Depth <span class="slider-val" id="val-depth">3</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="input-max-depth" min="1" max="5" value="3">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Threads <span class="slider-val" id="val-threads">5</span></label>
+                            <div class="slider-container">
+                                <input type="range" id="input-threads" min="1" max="15" value="5">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Delay (s) <span class="slider-val" id="val-delay">1.0</span></label>
+                            <div class="slider-container">
+                                <input type="range" id="input-delay" min="0" max="5" step="0.5" value="1.0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 10px;">
+                        <div class="switch-group">
+                            <label style="margin-bottom:0; cursor:pointer;" for="input-respect-robots">Respect Robots.txt</label>
+                            <label class="switch">
+                                <input type="checkbox" id="input-respect-robots">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="btn-grid">
+                        <button class="btn btn-primary" id="btn-start" onclick="startScan()">
+                            ⚡ START ENGINE
+                        </button>
+                        
+                        <div class="btn-row">
+                            <button class="btn btn-warning" id="btn-pause" onclick="pauseScan()" disabled>
+                                ⏸️ PAUSE
+                            </button>
+                            <button class="btn btn-danger" id="btn-stop" onclick="stopScan()" disabled>
+                                🛑 STOP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Console Log -->
+                <div class="terminal-container">
+                    <div class="terminal-header">
+                        <div class="title">
+                            <span style="display:inline-block; animation: pulseGlow 1s infinite alternate;">●</span> LIVE DIAGNOSTIC STREAM
+                        </div>
+                        <div class="terminal-dots">
+                            <span class="terminal-dot r"></span>
+                            <span class="terminal-dot y"></span>
+                            <span class="terminal-dot g"></span>
+                        </div>
+                    </div>
+                    <div class="terminal-body" id="terminal-console">
+                        <div class="terminal-line success">SYSTEM RUNNING. Ready to scan target hosts.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats & Visualizations Panel -->
+            <div>
+                <!-- Numeric indicators -->
+                <div class="stats-summary-grid">
+                    <div class="stat-card crawled">
+                        <span class="label">Pages Crawled</span>
+                        <span class="value" id="stat-crawled">0</span>
+                    </div>
+                    <div class="stat-card emails">
+                        <span class="label">Emails Found</span>
+                        <span class="value" id="stat-emails">0</span>
+                    </div>
+                    <div class="stat-card phones">
+                        <span class="label">Phones Found</span>
+                        <span class="value" id="stat-phones">0</span>
+                    </div>
+                    <div class="stat-card socials">
+                        <span class="label">Social Profiles</span>
+                        <span class="value" id="stat-socials">0</span>
+                    </div>
+                </div>
+
+                <!-- Auxiliary minor stats -->
+                <div class="aux-stats-grid">
+                    <div class="aux-stat">
+                        <div class="val" id="aux-tech">0</div>
+                        <div class="lbl">Technologies</div>
+                    </div>
+                    <div class="aux-stat">
+                        <div class="val" id="aux-sensitive">0</div>
+                        <div class="lbl">Sensitive Paths</div>
+                    </div>
+                    <div class="aux-stat">
+                        <div class="val" id="aux-sitemaps">0</div>
+                        <div class="lbl">Sitemap URLs</div>
+                    </div>
+                    <div class="aux-stat">
+                        <div class="val" id="aux-files">0</div>
+                        <div class="lbl">Files Found</div>
+                    </div>
+                </div>
+                <div class="aux-stats-grid" style="margin-top: 12px; margin-bottom: 20px;">
+                    <div class="aux-stat">
+                        <div class="val" id="aux-apis">0</div>
+                        <div class="lbl">API Endpoints</div>
+                    </div>
+                    <div class="aux-stat">
+                        <div class="val" id="aux-js">0</div>
+                        <div class="lbl">JS Bundles</div>
+                    </div>
+                    <div class="aux-stat">
+                        <div class="val" id="aux-queue">0</div>
+                        <div class="lbl">Queue Size</div>
+                    </div>
+                    <div class="aux-stat">
+                        <div class="val" id="aux-threads">0</div>
+                        <div class="lbl">Active Threads</div>
+                    </div>
+                </div>
+
+                <!-- Four-column target details, scores, timeline and chart grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <!-- Target Card -->
+                    <div class="panel" style="background: rgba(10,15,22,0.5);">
+                        <div class="panel-title">🛡️ Target Intelligence</div>
+                        <div style="font-size: 13px; font-family: var(--font-mono); line-height: 1.8;">
+                            <div>Domain: <span id="target-domain" style="color:var(--blue);">N/A</span></div>
+                            <div>IP Address: <span id="target-ip" style="color:var(--gold);">N/A</span></div>
+                            <div>Hosting: <span id="target-hosting">N/A</span></div>
+                            <div>Country: <span id="target-country">N/A</span></div>
+                            <div style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 5px; color: var(--gold);">SSL Info:</div>
+                            <div>Issuer: <span id="ssl-issuer">N/A</span></div>
+                            <div>Expiry: <span id="ssl-expiry" style="color:var(--red);">N/A</span> (<span id="ssl-remaining">0</span> days)</div>
+                            <div>TLS: <span id="ssl-tls" style="color:var(--green);">N/A</span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Scores -->
+                    <div class="panel" style="background: rgba(10,15,22,0.5);">
+                        <div class="panel-title">📊 Intelligence Scores</div>
+                        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 12px; font-family: var(--font-mono);">
+                            <div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                    <span>SEO Score</span>
+                                    <span id="score-seo-val">0%</span>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.05); height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                                    <div id="score-seo-bar" style="background: var(--blue); width: 0%; height: 100%; transition: width 0.5s;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                    <span>Security Score</span>
+                                    <span id="score-sec-val">0%</span>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.05); height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                                    <div id="score-sec-bar" style="background: var(--green); width: 0%; height: 100%; transition: width 0.5s;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                    <span>Performance Score</span>
+                                    <span id="score-perf-val">0%</span>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.05); height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                                    <div id="score-perf-bar" style="background: var(--gold); width: 0%; height: 100%; transition: width 0.5s;"></div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 5px;">
+                                <div style="color: var(--gold); margin-bottom: 2px;">Sitemap Intel:</div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span>Sitemap Found:</span>
+                                    <span id="sitemap-found" style="color: var(--red); font-weight: bold;">NO</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span>Indexed Pages:</span>
+                                    <span id="sitemap-indexed">0</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span>Hidden URLs:</span>
+                                    <span id="sitemap-hidden" style="color: var(--gold);">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline -->
+                    <div class="panel" style="background: rgba(10,15,22,0.5); display: flex; flex-direction: column;">
+                        <div class="panel-title">⏳ Crawl Timeline</div>
+                        <div id="timeline-container" style="flex: 1; height: 160px; overflow-y: auto; font-family: var(--font-mono); font-size: 11px; display: flex; flex-direction: column; gap: 6px; padding-right: 5px;">
+                            <div style="color: var(--text-muted);">No timeline logs. Start scan to record timeline events.</div>
+                        </div>
+                    </div>
+
+                    <!-- Doughnut Chart -->
+                    <div class="chart-card">
+                        <div class="title">HTTP Responses</div>
+                        <div class="chart-wrapper">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Findings Tables Panel -->
+        <div class="panel" style="margin-top: 10px;">
+            <div class="tabs-header">
+                <button class="tab-btn active" onclick="switchTab('tab-contacts')">
+                    📧 Contacts <span class="badge" id="badge-contacts">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-socials')">
+                    🔗 Social Media <span class="badge" id="badge-socials">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-tech')">
+                    ⚙️ Tech Stack & Metadata <span class="badge" id="badge-tech">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-sensitive')">
+                    🚨 Security Targets <span class="badge" id="badge-sensitive">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-links')">
+                    🌐 Structure Map <span class="badge" id="badge-links">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-files')">
+                    📁 Files <span class="badge" id="badge-files">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-js')">
+                    📦 JS Analyzer <span class="badge" id="badge-js">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-api')">
+                    🔌 API Map <span class="badge" id="badge-api">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-screenshots')">
+                    📸 Screenshots <span class="badge" id="badge-screenshots">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-graph')">
+                    🕸️ Graph View
+                </button>
+                <button class="tab-btn" onclick="switchTab('tab-ai')">
+                    🧠 AI Insights
+                </button>
+            </div>
+
+            <!-- TAB: CONTACTS -->
+            <div class="tab-content active" id="tab-contacts">
+                <div class="tab-action-bar">
+                    <div class="title">Discovered Emails & Phone Numbers</div>
+                    <div class="global-exports">
+                        <button class="btn-sm" onclick="exportData('emails')">📥 CSV Emails</button>
+                        <button class="btn-sm" onclick="exportData('phones')">📥 CSV Phones</button>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="tbl-contacts">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Contact Information</th>
+                                <th>Source URL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="placeholder-row"><td colspan="3" class="empty-state">No contacts discovered yet. Start the crawler engine to scan content.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: SOCIAL MEDIA -->
+            <div class="tab-content" id="tab-socials">
+                <div class="tab-action-bar">
+                    <div class="title">Discovered Social Profiles & Links</div>
+                    <button class="btn-sm" onclick="exportData('socials')">📥 Export CSV</button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="tbl-socials">
+                        <thead>
+                            <tr>
+                                <th>Platform Domain</th>
+                                <th>Profile Target Link</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="placeholder-row"><td colspan="2" class="empty-state">No profiles identified yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: TECH & METADATA -->
+            <div class="tab-content" id="tab-tech">
+                <div class="tab-action-bar">
+                    <div class="title">Environment Tech Markers & Document Meta</div>
+                </div>
+                
+                <h4 style="font-size: 13px; font-family: var(--font-mono); color: var(--gold); margin-bottom: 8px;">Identified Software, CMS, and Servers</h4>
+                <div class="list-items-flex" id="tech-stack-container">
+                    <div class="empty-state" style="width:100%; padding: 15px 0;">No technology signatures matched.</div>
+                </div>
+
+                <h4 style="font-size: 13px; font-family: var(--font-mono); color: var(--gold); margin: 20px 0 8px 0;">Document Titles Mapping</h4>
+                <div class="table-wrapper">
+                    <table id="tbl-metadata">
+                        <thead>
+                            <tr>
+                                <th>Crawled URL</th>
+                                <th>HTML Title Tag</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="placeholder-row"><td colspan="2" class="empty-state">No titles recorded.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: SENSITIVE TARGETS -->
+            <div class="tab-content" id="tab-sensitive">
+                <div class="tab-action-bar">
+                    <div class="title">High Interest Endpoints & Sensitive System Paths</div>
+                    <button class="btn-sm" onclick="exportData('sensitive')">📥 Export CSV</button>
+                </div>
+                
+                <div class="list-items-flex" id="sensitive-endpoints-container" style="margin-bottom: 20px;">
+                    <div class="empty-state" style="width:100%; padding: 15px 0;">No high-interest configuration paths tagged.</div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="tbl-sensitive">
+                        <thead>
+                            <tr>
+                                <th>Sensitive File/Path Pattern</th>
+                                <th>Matching Source URL Endpoint</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="placeholder-row"><td colspan="2" class="empty-state">No sensitive targets scanned.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: MAP STRUCTURE -->
+            <div class="tab-content" id="tab-links">
+                <div class="tab-action-bar">
+                    <div class="title">Internal and External Crawled Map URLs</div>
+                    <button class="btn-sm" onclick="exportData('links')">📥 Export CSV</button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="tbl-links">
+                        <thead>
+                            <tr>
+                                <th>URL Address</th>
+                                <th>Scope Type</th>
+                                <th>Crawl Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="placeholder-row"><td colspan="3" class="empty-state">Scan has not completed traversal mapping.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: FILES -->
+            <div class="tab-content" id="tab-files">
+                <div class="tab-action-bar">
+                    <div class="title">Harvested Files & Document Intelligence</div>
+                    <button class="btn-sm" onclick="exportData('files')">📥 Export CSV Files</button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="tbl-files">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Type</th>
+                                <th>Size</th>
+                                <th>Source URL Path</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="placeholder-row"><td colspan="5" class="empty-state">No files harvested yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: JS ANALYZER -->
+            <div class="tab-content" id="tab-js">
+                <div class="tab-action-bar">
+                    <div class="title">JavaScript Bundle Deep Analysis</div>
+                </div>
+                <div id="js-analyzer-container" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="empty-state">No JS bundles analyzed yet.</div>
+                </div>
+            </div>
+
+            <!-- TAB: API MAP -->
+            <div class="tab-content" id="tab-api">
+                <div class="tab-action-bar">
+                    <div class="title">Discovered API Routes & Endpoints</div>
+                    <button class="btn-sm" onclick="exportData('apis')">📥 Export CSV APIs</button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="tbl-api">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Endpoint Route</th>
+                                <th>Source File</th>
+                                <th>Detection Method</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="placeholder-row"><td colspan="4" class="empty-state">No API endpoints mapped yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: SCREENSHOTS -->
+            <div class="tab-content" id="tab-screenshots">
+                <div class="tab-action-bar">
+                    <div class="title">Captured Page Screenshots</div>
+                </div>
+                <div id="screenshots-gallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px;">
+                    <div class="empty-state" style="grid-column: 1 / -1;">No screenshots captured yet.</div>
+                </div>
+            </div>
+
+            <!-- TAB: GRAPH VIEW -->
+            <div class="tab-content" id="tab-graph">
+                <div class="tab-action-bar">
+                    <div class="title">Interactive Link Spider Graph</div>
+                    <button class="btn-sm" onclick="resetGraphPhysics()">🔄 Reset Layout</button>
+                </div>
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden; position: relative;">
+                    <canvas id="graphCanvas" style="display: block; cursor: grab; background: #05080c; width: 100%; height: 500px;"></canvas>
+                    <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 8px 12px; border-radius: 4px; font-size: 11px; font-family: var(--font-mono); pointer-events: none; border: 1px solid rgba(255,170,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; background: var(--gold); border-radius: 50%;"></span> Seed Domain</div>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;"><span style="width: 8px; height: 8px; background: var(--blue); border-radius: 50%;"></span> Crawled Page</div>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;"><span style="width: 8px; height: 8px; background: var(--red); border-radius: 50%;"></span> External Link</div>
+                        <div style="margin-top: 8px; color: var(--text-muted);">* Drag nodes to adjust. Double-click to visit link.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: AI INSIGHTS -->
+            <div class="tab-content" id="tab-ai">
+                <div class="tab-action-bar">
+                    <div class="title">Heuristic AI Target Assessment</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+                    <div class="panel" style="background: rgba(255,170,0,0.03); border-color: rgba(255,170,0,0.15);">
+                        <div style="font-weight: 600; color: var(--gold); font-size: 14px; font-family: var(--font-mono); margin-bottom: 10px;">🤖 TARGET PURPOSE CLASSIFICATION</div>
+                        <pre id="ai-summary-text" style="white-space: pre-wrap; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; color: var(--text-main);">No analysis available. Run a scan to initiate intelligence classification.</pre>
+                    </div>
+                    <div class="panel" style="background: rgba(255,51,68,0.03); border-color: rgba(255,51,68,0.15);">
+                        <div style="font-weight: 600; color: var(--red); font-size: 14px; font-family: var(--font-mono); margin-bottom: 10px;">🛡️ DETECTED SECURITY RISKS & ADVISORIES</div>
+                        <div id="ai-security-explanations" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div class="empty-state" style="padding: 10px 0;">No risk items identified yet.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 15px;">
+                <button class="btn-sm" onclick="exportData('txt')">📄 Download Text Report</button>
+                <button class="btn-sm" style="border-color: var(--blue); color: var(--blue);" onclick="exportData('pdf')">📕 PDF Security Report</button>
+                <button class="btn-sm" style="border-color: var(--green); color: var(--green);" onclick="exportData('html')">💻 HTML Interactive Report</button>
+                <button class="btn-sm" style="border-color: var(--text-muted); color: var(--text-muted);" onclick="exportData('xml')">🌐 XML Map Export</button>
+                <button class="btn-sm" style="border-color: var(--gold); color: var(--gold);" onclick="exportData('json')">📊 Download JSON Report</button>
+            </div>
+        </div>
+
+        <!-- Footer watermark -->
+        <div class="creator-watermark">
+            <span>STATION: ONLINE | SECURE ACCESS PORT 5000</span>
+            <span>AashishCyberH4CKS © 2026. All Ethical Standards Upheld.</span>
+        </div>
+
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+        // Init Sliders text
+        document.getElementById('input-max-depth').addEventListener('input', e => {
+            document.getElementById('val-depth').textContent = e.target.value;
+        });
+        document.getElementById('input-threads').addEventListener('input', e => {
+            document.getElementById('val-threads').textContent = e.target.value;
+        });
+        document.getElementById('input-delay').addEventListener('input', e => {
+            document.getElementById('val-delay').textContent = parseFloat(e.target.value).toFixed(1);
+        });
+
+        // Tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Activate current tab button
+            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+            if (btn) btn.classList.add('active');
+            
+            document.getElementById(tabId).classList.add('active');
+            
+            // If switching to graph view, trigger redraw/init
+            if (tabId === 'tab-graph') {
+                initGraphCanvas();
+            }
+        }
+
+        // Global Data Stores to populate the GUI
+        let emailSet = new Set();
+        let phoneSet = new Set();
+        let socialSet = new Set();
+        let techSet = new Set();
+        let sensitiveSet = new Set();
+        let linksMap = new Map(); // url -> status
+        let statusCounts = { '200': 0, 'Blocked': 0, 'Error': 0, 'Others': 0 };
+
+        // Force-Directed Graph data variables
+        let graphNodes = [];
+        let graphEdges = [];
+        let nodesMap = new Map(); // url -> node object
+
+        // ChartJS Initializer
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        let statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['OK (200)', 'Blocked', 'Error', 'Others'],
+                datasets: [{
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#00ff66', '#ffaa00', '#ff3344', '#00ccff'],
+                    borderWidth: 1,
+                    borderColor: '#080c10'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                cutout: '70%'
+            }
+        });
+
+        function updateChart() {
+            statusChart.data.datasets[0].data = [
+                statusCounts['200'],
+                statusCounts['Blocked'],
+                statusCounts['Error'],
+                statusCounts['Others']
+            ];
+            statusChart.update();
+        }
+
+        // Terminal Console logger
+        function writeToTerminal(msg, type = '') {
+            const terminal = document.getElementById('terminal-console');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            
+            const time = new Date().toLocaleTimeString();
+            line.innerHTML = `<span style="color:var(--text-muted);">${time}</span> ${msg}`;
+            
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Status badge updates
+        function updateStatusBadge(status) {
+            const badge = document.getElementById('global-status-badge');
+            const text = document.getElementById('global-status-text');
+            
+            badge.className = 'status-badge';
+            
+            // Stop button state adjustments
+            const btnStart = document.getElementById('btn-start');
+            const btnPause = document.getElementById('btn-pause');
+            const btnStop = document.getElementById('btn-stop');
+
+            if (status === 'running') {
+                badge.classList.add('scanning');
+                text.textContent = 'Scanning';
+                btnStart.disabled = true;
+                btnPause.disabled = false;
+                btnPause.textContent = '⏸️ PAUSE';
+                btnStop.disabled = false;
+            } else if (status === 'paused') {
+                badge.classList.add('paused');
+                text.textContent = 'Paused';
+                btnStart.disabled = true;
+                btnPause.disabled = false;
+                btnPause.textContent = '▶️ RESUME';
+                btnStop.disabled = false;
+            } else if (status === 'completed') {
+                badge.classList.add('completed');
+                text.textContent = 'Completed';
+                btnStart.disabled = false;
+                btnPause.disabled = true;
+                btnStop.disabled = true;
+            } else if (status === 'stopped') {
+                badge.classList.add('stopped');
+                text.textContent = 'Stopped';
+                btnStart.disabled = false;
+                btnPause.disabled = true;
+                btnStop.disabled = true;
+            } else {
+                badge.classList.add('stopped');
+                text.textContent = status;
+            }
+        }
+
+        // Reset UI data before new scan
+        function resetDashboard() {
+            emailSet.clear();
+            phoneSet.clear();
+            socialSet.clear();
+            techSet.clear();
+            sensitiveSet.clear();
+            linksMap.clear();
+            
+            statusCounts = { '200': 0, 'Blocked': 0, 'Error': 0, 'Others': 0 };
+            updateChart();
+
+            document.getElementById('stat-crawled').textContent = '0';
+            document.getElementById('stat-emails').textContent = '0';
+            document.getElementById('stat-phones').textContent = '0';
+            document.getElementById('stat-socials').textContent = '0';
+
+            document.getElementById('aux-tech').textContent = '0';
+            document.getElementById('aux-sensitive').textContent = '0';
+            document.getElementById('aux-queue').textContent = '0';
+            document.getElementById('aux-threads').textContent = '0';
+            document.getElementById('aux-files').textContent = '0';
+            document.getElementById('aux-apis').textContent = '0';
+            document.getElementById('aux-js').textContent = '0';
+            document.getElementById('aux-sitemaps').textContent = '0';
+
+            document.getElementById('badge-contacts').textContent = '0';
+            document.getElementById('badge-socials').textContent = '0';
+            document.getElementById('badge-tech').textContent = '0';
+            document.getElementById('badge-sensitive').textContent = '0';
+            document.getElementById('badge-links').textContent = '0';
+            document.getElementById('badge-files').textContent = '0';
+            document.getElementById('badge-js').textContent = '0';
+            document.getElementById('badge-api').textContent = '0';
+            document.getElementById('badge-screenshots').textContent = '0';
+
+            // Clear tables
+            document.querySelectorAll('table tbody').forEach(tbody => {
+                const colSpan = tbody.closest('table').querySelectorAll('th').length;
+                tbody.innerHTML = `<tr class="placeholder-row"><td colspan="${colSpan}" class="empty-state">Scanning hasn't discovered items yet.</td></tr>`;
+            });
+
+            // Clear tech and sensitive lists
+            document.getElementById('tech-stack-container').innerHTML = `<div class="empty-state" style="width:100%; padding: 15px 0;">No technology signatures matched.</div>`;
+            document.getElementById('sensitive-endpoints-container').innerHTML = `<div class="empty-state" style="width:100%; padding: 15px 0;">No high-interest configuration paths tagged.</div>`;
+            document.getElementById('js-analyzer-container').innerHTML = '<div class="empty-state">No JS bundles analyzed yet.</div>';
+            document.getElementById('screenshots-gallery').innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">No screenshots captured yet.</div>';
+            document.getElementById('ai-summary-text').textContent = 'No analysis available. Run a scan to initiate intelligence classification.';
+            document.getElementById('ai-security-explanations').innerHTML = '<div class="empty-state" style="padding: 10px 0;">No risk items identified yet.</div>';
+
+            // Reset Graph
+            graphNodes = [];
+            graphEdges = [];
+            nodesMap.clear();
+
+            // Reset target card
+            document.getElementById('target-domain').textContent = 'N/A';
+            document.getElementById('target-ip').textContent = 'N/A';
+            document.getElementById('target-hosting').textContent = 'N/A';
+            document.getElementById('target-country').textContent = 'N/A';
+            document.getElementById('ssl-issuer').textContent = 'N/A';
+            document.getElementById('ssl-expiry').textContent = 'N/A';
+            document.getElementById('ssl-remaining').textContent = '0';
+            document.getElementById('ssl-tls').textContent = 'N/A';
+            
+            // Reset sitemap card
+            document.getElementById('sitemap-found').textContent = 'NO';
+            document.getElementById('sitemap-found').style.color = 'var(--red)';
+            document.getElementById('sitemap-indexed').textContent = '0';
+            document.getElementById('sitemap-hidden').textContent = '0';
+            
+            // Reset scores
+            document.getElementById('score-seo-val').textContent = '0%';
+            document.getElementById('score-seo-bar').style.width = '0%';
+            document.getElementById('score-sec-val').textContent = '0%';
+            document.getElementById('score-sec-bar').style.width = '0%';
+            document.getElementById('score-perf-val').textContent = '0%';
+            document.getElementById('score-perf-bar').style.width = '0%';
+
+            document.getElementById('terminal-console').innerHTML = '';
+            writeToTerminal('ENGINE STATE RESET. Starting new run sequence...', 'info');
+        }
+
+        let lastFetchTime = 0;
+        function throttleFetchResults() {
+            const now = Date.now();
+            if (now - lastFetchTime > 2000) { // max once every 2 seconds
+                lastFetchTime = now;
+                updateResultsData();
+            }
+        }
+
+        function updateResultsData() {
+            fetch('/api/results')
+            .then(res => res.json())
+            .then(results => {
+                // Populate Domain Intelligence Card details
+                if (results.target_info) {
+                    document.getElementById('target-domain').textContent = results.target_info.domain || 'N/A';
+                    document.getElementById('target-ip').textContent = results.target_info.ip || 'N/A';
+                    document.getElementById('target-hosting').textContent = results.target_info.hosting || 'N/A';
+                    document.getElementById('target-country').textContent = results.target_info.country || 'N/A';
+                }
+                
+                // Populate SSL
+                if (results.ssl_info) {
+                    document.getElementById('ssl-issuer').textContent = results.ssl_info.issuer || 'N/A';
+                    document.getElementById('ssl-expiry').textContent = results.ssl_info.expiry || 'N/A';
+                    document.getElementById('ssl-remaining').textContent = results.ssl_info.remaining_days || '0';
+                    document.getElementById('ssl-tls').textContent = results.ssl_info.tls_version || 'N/A';
+                }
+                
+                // Populate Scores
+                if (results.scores) {
+                    document.getElementById('score-seo-val').textContent = (results.scores.seo || 0) + '%';
+                    document.getElementById('score-seo-bar').style.width = (results.scores.seo || 0) + '%';
+                    
+                    document.getElementById('score-sec-val').textContent = (results.scores.security || 0) + '%';
+                    document.getElementById('score-sec-bar').style.width = (results.scores.security || 0) + '%';
+                    
+                    document.getElementById('score-perf-val').textContent = (results.scores.performance || 0) + '%';
+                    document.getElementById('score-perf-bar').style.width = (results.scores.performance || 0) + '%';
+                }
+                
+                // Populate Sitemap info
+                if (results.sitemap_info) {
+                    const foundSpan = document.getElementById('sitemap-found');
+                    foundSpan.textContent = results.sitemap_info.found || 'NO';
+                    if (results.sitemap_info.found === 'YES') {
+                        foundSpan.style.color = 'var(--green)';
+                    } else {
+                        foundSpan.style.color = 'var(--red)';
+                    }
+                    document.getElementById('sitemap-indexed').textContent = results.sitemap_info.total_urls || '0';
+                    document.getElementById('sitemap-hidden').textContent = (results.sitemap_info.hidden_urls || []).length || '0';
+                }
+                
+                // Populate Timeline
+                if (results.timeline && results.timeline.length > 0) {
+                    const tContainer = document.getElementById('timeline-container');
+                    tContainer.innerHTML = '';
+                    results.timeline.forEach(event => {
+                        const div = document.createElement('div');
+                        div.innerHTML = `<span style="color:var(--text-muted); font-size:10px;">[${event.time}]</span> <span style="color:var(--blue);">${event.event}</span>`;
+                        tContainer.appendChild(div);
+                    });
+                }
+                
+                // Populate Discovered Files
+                if (results.found_files && results.found_files.length > 0) {
+                    const tbody = document.querySelector('#tbl-files tbody');
+                    tbody.innerHTML = '';
+                    results.found_files.forEach(f => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="font-weight:600; color:var(--blue);">${f.filename}</td>
+                            <td style="font-family:var(--font-mono);">${f.type}</td>
+                            <td style="font-family:var(--font-mono);">${f.size}</td>
+                            <td><a href="${f.url}" target="_blank">${f.url}</a></td>
+                            <td class="badge-cell"><span class="td-badge ${f.status_code === 200 ? 'status-200' : 'status-error'}">${f.status_code}</span></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    document.getElementById('badge-files').textContent = results.found_files.length;
+                    document.getElementById('aux-files').textContent = results.found_files.length;
+                }
+                
+                // Populate API Routes
+                if (results.api_routes && results.api_routes.length > 0) {
+                    const tbody = document.querySelector('#tbl-api tbody');
+                    tbody.innerHTML = '';
+                    results.api_routes.forEach(api => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="font-weight:600; color:var(--gold); font-family:var(--font-mono);">${api.method}</td>
+                            <td style="font-family:var(--font-mono); color:var(--text-main);">${api.endpoint}</td>
+                            <td style="font-family:var(--font-mono);">${api.source_file}</td>
+                            <td><span class="td-badge status-other">${api.status}</span></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    document.getElementById('badge-api').textContent = results.api_routes.length;
+                    document.getElementById('aux-apis').textContent = results.api_routes.length;
+                }
+                
+                // Populate JS bundles
+                if (results.js_analyzer_results && results.js_analyzer_results.files) {
+                    const jsContainer = document.getElementById('js-analyzer-container');
+                    jsContainer.innerHTML = '';
+                    const files = results.js_analyzer_results.files;
+                    const fileKeys = Object.keys(files);
+                    if (fileKeys.length === 0) {
+                        jsContainer.innerHTML = '<div class="empty-state">No JS bundles analyzed yet.</div>';
+                    } else {
+                        fileKeys.forEach(url => {
+                            const file = files[url];
+                            const filePanel = document.createElement('div');
+                            filePanel.className = 'panel';
+                            filePanel.style.background = 'rgba(10,15,22,0.4)';
+                            filePanel.style.borderColor = 'rgba(255,255,255,0.06)';
+                            filePanel.style.marginBottom = '10px';
+                            
+                            let endpointsHtml = '';
+                            if (file.endpoints && file.endpoints.length > 0) {
+                                endpointsHtml = `<div style="margin-top:8px;"><strong>Endpoints Detected:</strong><div class="list-items-flex">` +
+                                    file.endpoints.map(ep => `<span class="flex-badge" style="background:rgba(0,204,255,0.05); border-color:rgba(0,204,255,0.15); color:var(--blue); font-size:11px;">${ep}</span>`).join('') +
+                                    `</div></div>`;
+                            }
+                            
+                            let tokensHtml = '';
+                            if (file.tokens && file.tokens.length > 0) {
+                                tokensHtml = `<div style="margin-top:8px;"><strong>Sensitive Keys/Tokens:</strong><div class="list-items-flex">` +
+                                    file.tokens.map(tk => `<span class="flex-badge sensitive" style="font-size:11px;">🔑 ${tk}</span>`).join('') +
+                                    `</div></div>`;
+                            }
+                            
+                            let commentsHtml = '';
+                            if (file.comments && file.comments.length > 0) {
+                                commentsHtml = `<div style="margin-top:8px;"><strong>Interesting Code Comments:</strong><ul style="padding-left:20px; font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-top:4px;">` +
+                                    file.comments.map(c => `<li>${c}</li>`).join('') +
+                                    `</ul></div>`;
+                            }
+                            
+                            filePanel.innerHTML = `
+                                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px;">
+                                    <span style="font-weight:600; color:var(--gold); font-family:var(--font-mono);">${file.filename}</span>
+                                    <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${file.size}</span>
+                                </div>
+                                <div style="font-size:12px; margin-top:8px; word-break:break-all;">
+                                    <strong>Script Path:</strong> <a href="${file.url}" target="_blank">${file.url}</a>
+                                </div>
+                                ${endpointsHtml}
+                                ${tokensHtml}
+                                ${commentsHtml}
+                            `;
+                            jsContainer.appendChild(filePanel);
+                        });
+                    }
+                    document.getElementById('badge-js').textContent = fileKeys.length;
+                    document.getElementById('aux-js').textContent = fileKeys.length;
+                }
+                
+                // Populate Screenshots
+                if (results.screenshots && results.screenshots.length > 0) {
+                    const gallery = document.getElementById('screenshots-gallery');
+                    gallery.innerHTML = '';
+                    results.screenshots.forEach(s => {
+                        const item = document.createElement('div');
+                        item.style.background = 'rgba(10,15,22,0.5)';
+                        item.style.border = '1px solid rgba(255,255,255,0.05)';
+                        item.style.borderRadius = '8px';
+                        item.style.overflow = 'hidden';
+                        item.style.transition = 'all 0.3s';
+                        item.style.display = 'flex';
+                        item.style.flexDirection = 'column';
+                        
+                        item.innerHTML = `
+                            <div style="position:relative; width:100%; padding-top:62.5%; overflow:hidden;">
+                                <img src="${s.thumbnail}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; transition: transform 0.5s;" alt="Screenshot">
+                            </div>
+                            <div style="padding:10px; font-size:11px; display:flex; flex-direction:column; gap:4px; flex-grow:1; justify-content:space-between;">
+                                <div style="word-break:break-all; font-weight:500; font-family:var(--font-mono); height:32px; overflow:hidden;"><a href="${s.url}" target="_blank">${s.url}</a></div>
+                                <div style="color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                                    <span>Captured: ${s.time.split(' ')[1]}</span>
+                                    <a class="btn-sm" style="padding:2px 6px; font-size:9px;" href="${s.thumbnail}" download target="_blank">Download</a>
+                                </div>
+                            </div>
+                        `;
+                        
+                        const img = item.querySelector('img');
+                        item.onmouseenter = () => { img.style.transform = 'scale(1.05)'; item.style.borderColor = 'var(--gold)'; };
+                        item.onmouseleave = () => { img.style.transform = 'scale(1)'; item.style.borderColor = 'rgba(255,255,255,0.05)'; };
+                        gallery.appendChild(item);
+                    });
+                    document.getElementById('badge-screenshots').textContent = results.screenshots.length;
+                }
+                
+                // Populate AI Insights
+                if (results.ai_insights) {
+                    document.getElementById('ai-summary-text').textContent = results.ai_insights.summary || 'No analysis available. Run a scan to initiate intelligence classification.';
+                    
+                    const expContainer = document.getElementById('ai-security-explanations');
+                    expContainer.innerHTML = '';
+                    if (results.ai_insights.security_explanations && results.ai_insights.security_explanations.length > 0) {
+                        results.ai_insights.security_explanations.forEach(exp => {
+                            const expCard = document.createElement('div');
+                            expCard.style.background = 'rgba(255,51,68,0.03)';
+                            expCard.style.borderLeft = '4px solid var(--red)';
+                            expCard.style.padding = '10px 14px';
+                            expCard.style.borderRadius = '0 6px 6px 0';
+                            expCard.style.fontFamily = 'var(--font-mono)';
+                            expCard.style.fontSize = '12px';
+                            expCard.style.color = 'var(--text-main)';
+                            expCard.textContent = exp;
+                            expContainer.appendChild(expCard);
+                        });
+                    } else {
+                        expContainer.innerHTML = '<div class="empty-state">No security explanations generated.</div>';
+                    }
+                }
+                
+                // Rebuild node map graph data
+                if (results.crawled_pages) {
+                    results.crawled_pages.forEach(p => {
+                        addGraphNode(p.url, 'page', p.title);
+                    });
+                }
+                if (results.internal_links_found) {
+                    results.internal_links_found.forEach(link => {
+                        addGraphNode(link, 'internal');
+                        if (results.crawled_pages && results.crawled_pages.length > 0) {
+                            const seed = results.crawled_pages[0].url;
+                            if (link !== seed) {
+                                addGraphEdge(seed, link);
+                            }
+                        }
+                    });
+                }
+                if (results.external_links_found) {
+                    results.external_links_found.forEach(link => {
+                        addGraphNode(link, 'external');
+                        if (results.crawled_pages && results.crawled_pages.length > 0) {
+                            const seed = results.crawled_pages[0].url;
+                            addGraphEdge(seed, link);
+                        }
+                    });
+                }
+            });
+        }
+
+        // Start SSE Stream listener
+        function initEventStream() {
+            const eventSource = new EventSource('/api/stream');
+            
+            eventSource.addEventListener('init', function(e) {
+                const data = JSON.parse(e.data);
+                if (data.stats.is_running) {
+                    updateStatusBadge(data.stats.is_paused ? 'paused' : 'running');
+                    writeToTerminal(`Reconnected to active crawler scanning domain: ${data.domain}`, 'info');
+                    throttleFetchResults();
+                } else {
+                    updateStatusBadge('stopped');
+                }
+            });
+
+            eventSource.addEventListener('log', function(e) {
+                const msg = e.data.replace(/"/g, ''); // strip wrapping quotes if any
+                let type = '';
+                if (msg.includes('[+]')) type = 'success';
+                else if (msg.includes('[-]')) type = 'warn';
+                else if (msg.includes('[x]')) type = 'err';
+                else if (msg.includes('[*]')) type = 'info';
+                
+                writeToTerminal(msg, type);
+            });
+
+            eventSource.addEventListener('status_update', function(e) {
+                const data = JSON.parse(e.data);
+                updateStatusBadge(data.status);
+                throttleFetchResults();
+            });
+
+            eventSource.addEventListener('stats_update', function(e) {
+                const stats = JSON.parse(e.data);
+                document.getElementById('stat-crawled').textContent = stats.pages_crawled;
+                document.getElementById('stat-emails').textContent = stats.emails_count;
+                document.getElementById('stat-phones').textContent = stats.phones_count;
+                document.getElementById('stat-socials').textContent = stats.socials_count;
+                
+                document.getElementById('aux-tech').textContent = stats.tech_stack_count;
+                document.getElementById('aux-sensitive').textContent = stats.sensitive_count;
+                document.getElementById('aux-queue').textContent = stats.queue_size;
+                document.getElementById('aux-threads').textContent = stats.active_threads;
+
+                document.getElementById('aux-files').textContent = stats.found_files_count || 0;
+                document.getElementById('aux-apis').textContent = stats.api_routes_count || 0;
+                document.getElementById('aux-js').textContent = stats.js_analyzer_results?.total_files || 0;
+                document.getElementById('aux-sitemaps').textContent = stats.sitemap_info?.total_urls || 0;
+
+                throttleFetchResults();
+            });
+
+            eventSource.addEventListener('page_crawled', function(e) {
+                const page = JSON.parse(e.data);
+                
+                // 1. Process status code in chart
+                const status = page.status_code;
+                if (status === 200) {
+                    statusCounts['200']++;
+                } else if (typeof status === 'string' && status.includes('Blocked')) {
+                    statusCounts['Blocked']++;
+                } else if (typeof status === 'string' && status.includes('Error')) {
+                    statusCounts['Error']++;
+                } else {
+                    const st = parseInt(status);
+                    if (st >= 400) statusCounts['Error']++;
+                    else if (st === 200) statusCounts['200']++;
+                    else statusCounts['Others']++;
+                }
+                updateChart();
+
+                // 2. Add Crawled URL metadata to tables
+                addMetadataRow(page.url, page.title);
+                addLinkRow(page.url, 'Internal', page.status_code);
+
+                // 3. Populate Contacts
+                if (page.emails && page.emails.length > 0) {
+                    page.emails.forEach(email => {
+                        if (!emailSet.has(email)) {
+                            emailSet.add(email);
+                            addContactRow('Email 📧', email, page.url);
+                        }
+                    });
+                }
+                if (page.phones && page.phones.length > 0) {
+                    page.phones.forEach(phone => {
+                        if (!phoneSet.has(phone)) {
+                            phoneSet.add(phone);
+                            addContactRow('Phone 📞', phone, page.url);
+                        }
+                    });
+                }
+                
+                // 4. Populate Socials
+                if (page.socials && page.socials.length > 0) {
+                    page.socials.forEach(social => {
+                        if (!socialSet.has(social)) {
+                            socialSet.add(social);
+                            addSocialRow(social);
+                        }
+                    });
+                }
+
+                // 5. Populate Tech stack signatures
+                if (page.tech_stack && page.tech_stack.length > 0) {
+                    page.tech_stack.forEach(tech => {
+                        if (!techSet.has(tech)) {
+                            techSet.add(tech);
+                            addTechBadge(tech);
+                        }
+                    });
+                }
+
+                // 6. Populate sensitive endpoints
+                if (page.sensitive && page.sensitive.length > 0) {
+                    page.sensitive.forEach(sens => {
+                        const uniqueKey = `${sens}::${page.url}`;
+                        if (!sensitiveSet.has(uniqueKey)) {
+                            sensitiveSet.add(uniqueKey);
+                            addSensitiveRow(sens, page.url);
+                        }
+                    });
+                }
+
+                // Sync Badges counters
+                syncBadgeCounts();
+                throttleFetchResults();
+            });
+            
+            eventSource.onerror = function() {
+                updateStatusBadge('Stopped');
+                writeToTerminal('EventStream stream disconnected. Server may be offline.', 'err');
+            };
+        }
+
+        // Add table row functions (clearing placeholders on first addition)
+        function clearPlaceholder(tbody) {
+            const placeholder = tbody.querySelector('.placeholder-row');
+            if (placeholder) {
+                tbody.removeChild(placeholder);
+            }
+        }
+
+        function addContactRow(type, val, url) {
+            const tbody = document.querySelector('#tbl-contacts tbody');
+            clearPlaceholder(tbody);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="font-weight: 600; color: var(--gold);">${type}</td>
+                <td style="font-family: var(--font-mono); color: var(--text-main);">${val}</td>
+                <td><a href="${url}" target="_blank">${url}</a></td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function addSocialRow(url) {
+            const tbody = document.querySelector('#tbl-socials tbody');
+            clearPlaceholder(tbody);
+            const domain = new URL(url).hostname.replace('www.', '');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="font-weight: 600; color: var(--blue);"><span style="text-transform: uppercase;">${domain}</span></td>
+                <td><a href="${url}" target="_blank" style="font-family: var(--font-mono);">${url}</a></td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function addMetadataRow(url, title) {
+            const tbody = document.querySelector('#tbl-metadata tbody');
+            clearPlaceholder(tbody);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><a href="${url}" target="_blank">${url}</a></td>
+                <td style="font-weight: 500; color: var(--text-main);">${title}</td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function addLinkRow(url, scope, status) {
+            const tbody = document.querySelector('#tbl-links tbody');
+            clearPlaceholder(tbody);
+            
+            // Check if row already exists
+            const existing = Array.from(tbody.querySelectorAll('tr')).find(r => r.cells[0]?.textContent === url);
+            if (existing) {
+                // Update status badge
+                const badgeCell = existing.cells[2];
+                let css = 'status-other';
+                if (status === 200) css = 'status-200';
+                else if (typeof status === 'string' && (status.includes('Error') || status.includes('Blocked'))) css = 'status-error';
+                badgeCell.innerHTML = `<span class="td-badge ${css}">${status}</span>`;
+                return;
+            }
+
+            const row = document.createElement('tr');
+            let css = 'status-other';
+            if (status === 200) css = 'status-200';
+            else if (typeof status === 'string' && (status.includes('Error') || status.includes('Blocked'))) css = 'status-error';
+            
+            row.innerHTML = `
+                <td><a href="${url}" target="_blank">${url}</a></td>
+                <td style="font-family: var(--font-mono);">${scope}</td>
+                <td class="badge-cell"><span class="td-badge ${css}">${status}</span></td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function addSensitiveRow(pattern, url) {
+            const tbody = document.querySelector('#tbl-sensitive tbody');
+            clearPlaceholder(tbody);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="font-weight: 700; color: var(--red); font-family: var(--font-mono);">${pattern}</td>
+                <td><a href="${url}" target="_blank">${url}</a></td>
+            `;
+            tbody.appendChild(row);
+            
+            // Add a critical layout badge
+            const container = document.getElementById('sensitive-endpoints-container');
+            const empty = container.querySelector('.empty-state');
+            if (empty) container.innerHTML = '';
+            
+            const badge = document.createElement('div');
+            badge.className = 'flex-badge sensitive';
+            badge.innerHTML = `🚨 ${pattern}`;
+            container.appendChild(badge);
+        }
+
+        function addTechBadge(tech) {
+            const container = document.getElementById('tech-stack-container');
+            const empty = container.querySelector('.empty-state');
+            if (empty) container.innerHTML = '';
+            
+            const badge = document.createElement('div');
+            badge.className = 'flex-badge tech';
+            badge.innerHTML = `⚙️ ${tech}`;
+            container.appendChild(badge);
+        }
+
+        function syncBadgeCounts() {
+            document.getElementById('badge-contacts').textContent = emailSet.size + phoneSet.size;
+            document.getElementById('badge-socials').textContent = socialSet.size;
+            document.getElementById('badge-tech').textContent = techSet.size;
+            
+            // Sensitive badge counts
+            const rowsSens = document.querySelectorAll('#tbl-sensitive tbody tr:not(.placeholder-row)').length;
+            document.getElementById('badge-sensitive').textContent = rowsSens;
+            
+            // Links mapped count
+            const rowsLinks = document.querySelectorAll('#tbl-links tbody tr:not(.placeholder-row)').length;
+            document.getElementById('badge-links').textContent = rowsLinks;
+        }
+
+        // Trigger crawler startup API
+        function startScan() {
+            const urlInput = document.getElementById('input-url').value.trim();
+            if (!urlInput) {
+                alert('Please enter a target seed URL');
+                return;
+            }
+
+            resetDashboard();
+            
+            const params = {
+                url: urlInput,
+                max_pages: parseInt(document.getElementById('input-max-pages').value),
+                max_depth: parseInt(document.getElementById('input-max-depth').value),
+                threads: parseInt(document.getElementById('input-threads').value),
+                delay: parseFloat(document.getElementById('input-delay').value),
+                user_agent: document.getElementById('input-user-agent').value,
+                respect_robots: document.getElementById('input-respect-robots').checked
+            };
+
+            updateStatusBadge('running');
+            writeToTerminal(`Initializing connection sequence for target: ${urlInput}...`, 'info');
+
+            fetch('/api/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(params)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    writeToTerminal(`Startup failed: ${data.error}`, 'err');
+                    updateStatusBadge('stopped');
+                } else {
+                    writeToTerminal('Scan routine initiated. Streaming data...', 'success');
+                }
+            })
+            .catch(err => {
+                writeToTerminal(`Server communication error: ${err.message}`, 'err');
+                updateStatusBadge('stopped');
+            });
+        }
+
+        function pauseScan() {
+            const btnPause = document.getElementById('btn-pause');
+            const isPaused = btnPause.textContent.includes('RESUME');
+            
+            const endpoint = isPaused ? '/api/resume' : '/api/pause';
+            const actionLabel = isPaused ? 'Resume' : 'Pause';
+
+            fetch(endpoint, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    writeToTerminal(`Could not request ${actionLabel}: ${data.error}`, 'err');
+                } else {
+                    writeToTerminal(`Request sent: ${actionLabel}`, 'info');
+                }
+            });
+        }
+
+        function stopScan() {
+            fetch('/api/stop', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    writeToTerminal(`Could not request Stop: ${data.error}`, 'err');
+                } else {
+                    writeToTerminal('Stop signal injected into worker threads.', 'warn');
+                }
+            });
+        }
+
+        // Export/Download Report Helper
+        function exportData(type) {
+            window.open(`/api/export/${type}`, '_blank');
+        }
+
+        // Canvas Force-Directed Interactive Graph Rendering
+        let canvas, ctxG;
+        let animationFrameId = null;
+        let dragNode = null;
+        let hoverNode = null;
+        let transformX = 0, transformY = 0;
+        let zoomScale = 1;
+
+        function addGraphNode(url, type, title = '') {
+            if (nodesMap.has(url)) {
+                const node = nodesMap.get(url);
+                if (type === 'page' && node.type !== 'page') {
+                    node.type = 'page';
+                    node.title = title || node.title;
+                    node.radius = 8;
+                    node.color = 'var(--blue)';
+                }
+                return;
+            }
+            
+            const isSeed = graphNodes.length === 0;
+            const node = {
+                id: url,
+                url: url,
+                title: title || url,
+                type: isSeed ? 'seed' : type,
+                x: (Math.random() - 0.5) * 200 + (canvas ? canvas.width / 2 : 400),
+                y: (Math.random() - 0.5) * 200 + (canvas ? canvas.height / 2 : 250),
+                vx: 0,
+                vy: 0,
+                radius: isSeed ? 12 : (type === 'page' ? 8 : 5),
+                color: isSeed ? 'var(--gold)' : (type === 'page' ? 'var(--blue)' : 'var(--red)'),
+                label: title || new URL(url).pathname
+            };
+            graphNodes.push(node);
+            nodesMap.set(url, node);
+        }
+
+        function addGraphEdge(sourceId, targetId) {
+            const edgeKey = `${sourceId}::${targetId}`;
+            const reverseEdgeKey = `${targetId}::${sourceId}`;
+            if (graphEdges.some(e => e.key === edgeKey || e.key === reverseEdgeKey)) {
+                return;
+            }
+            graphEdges.push({
+                source: sourceId,
+                target: targetId,
+                key: edgeKey
+            });
+        }
+
+        function initGraphCanvas() {
+            canvas = document.getElementById('graphCanvas');
+            if (!canvas) return;
+            ctxG = canvas.getContext('2d');
+            
+            // Adjust canvas sizing
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = 500;
+            
+            // Setup mouse handlers for dragging and zooming
+            canvas.onmousedown = handleMouseDown;
+            canvas.onmousemove = handleMouseMove;
+            canvas.onmouseup = handleMouseUp;
+            canvas.ondblclick = handleDoubleClick;
+            
+            if (!animationFrameId) {
+                runGraphSimulation();
+            }
+        }
+
+        function resetGraphPhysics() {
+            if (!canvas) return;
+            graphNodes.forEach(node => {
+                node.x = (Math.random() - 0.5) * 200 + canvas.width / 2;
+                node.y = (Math.random() - 0.5) * 200 + canvas.height / 2;
+                node.vx = 0;
+                node.vy = 0;
+            });
+        }
+
+        function runGraphSimulation() {
+            if (!canvas || !ctxG) return;
+            
+            const kRepulsion = 120;
+            const kAttraction = 0.04;
+            const kGravity = 0.02;
+            const damping = 0.85;
+            
+            // Repulsion forces (node-node)
+            for (let i = 0; i < graphNodes.length; i++) {
+                const n1 = graphNodes[i];
+                for (let j = i + 1; j < graphNodes.length; j++) {
+                    const n2 = graphNodes[j];
+                    const dx = n2.x - n1.x;
+                    const dy = n2.y - n1.y;
+                    const distSq = dx * dx + dy * dy || 1;
+                    const dist = Math.sqrt(distSq);
+                    
+                    if (dist < 150) {
+                        const force = (kRepulsion * kRepulsion) / dist;
+                        const fx = (dx / dist) * force;
+                        const fy = (dy / dist) * force;
+                        
+                        if (n1 !== dragNode) { n1.vx -= fx; n1.vy -= fy; }
+                        if (n2 !== dragNode) { n2.vx += fx; n2.vy += fy; }
+                    }
+                }
+            }
+            
+            // Attraction forces (links)
+            graphEdges.forEach(edge => {
+                const n1 = nodesMap.get(edge.source);
+                const n2 = nodesMap.get(edge.target);
+                if (n1 && n2) {
+                    const dx = n2.x - n1.x;
+                    const dy = n2.y - n1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    
+                    const force = kAttraction * (dist - 60);
+                    const fx = (dx / dist) * force;
+                    const fy = (dy / dist) * force;
+                    
+                    if (n1 !== dragNode) { n1.vx += fx; n1.vy += fy; }
+                    if (n2 !== dragNode) { n2.vx -= fx; n2.vy -= fy; }
+                }
+            });
+            
+            // Gravity and Friction
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            graphNodes.forEach(node => {
+                if (node === dragNode) return;
+                
+                node.vx += (centerX - node.x) * kGravity;
+                node.vy += (centerY - node.y) * kGravity;
+                
+                node.x += node.vx;
+                node.y += node.vy;
+                
+                node.vx *= damping;
+                node.vy *= damping;
+            });
+            
+            // Draw
+            ctxG.fillStyle = '#05080c';
+            ctxG.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctxG.save();
+            ctxG.translate(transformX, transformY);
+            ctxG.scale(zoomScale, zoomScale);
+            
+            // Draw Edges
+            ctxG.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctxG.lineWidth = 1;
+            graphEdges.forEach(edge => {
+                const n1 = nodesMap.get(edge.source);
+                const n2 = nodesMap.get(edge.target);
+                if (n1 && n2) {
+                    ctxG.beginPath();
+                    ctxG.moveTo(n1.x, n1.y);
+                    ctxG.lineTo(n2.x, n2.y);
+                    ctxG.stroke();
+                }
+            });
+            
+            // Draw Nodes
+            graphNodes.forEach(node => {
+                ctxG.beginPath();
+                ctxG.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
+                
+                let fill = '#00ccff';
+                if (node.type === 'seed') fill = '#ffaa00';
+                else if (node.type === 'external') fill = '#ff3344';
+                
+                ctxG.fillStyle = fill;
+                ctxG.shadowColor = fill;
+                ctxG.shadowBlur = node.type === 'seed' ? 10 : 4;
+                ctxG.fill();
+                ctxG.shadowBlur = 0;
+                
+                if (node.type === 'seed' || node === hoverNode) {
+                    ctxG.fillStyle = '#e2e8f0';
+                    ctxG.font = '10px "Fira Code", monospace';
+                    ctxG.fillText(node.label || node.url, node.x + 12, node.y + 4);
+                }
+            });
+            
+            ctxG.restore();
+            animationFrameId = requestAnimationFrame(runGraphSimulation);
+        }
+
+        function handleMouseDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left - transformX) / zoomScale;
+            const mouseY = (e.clientY - rect.top - transformY) / zoomScale;
+            
+            let found = null;
+            for (let node of graphNodes) {
+                const dist = Math.sqrt((node.x - mouseX)**2 + (node.y - mouseY)**2);
+                if (dist < node.radius + 5) {
+                    found = node;
+                    break;
+                }
+            }
+            
+            if (found) {
+                dragNode = found;
+                canvas.style.cursor = 'grabbing';
+            }
+        }
+
+        function handleMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left - transformX) / zoomScale;
+            const mouseY = (e.clientY - rect.top - transformY) / zoomScale;
+            
+            if (dragNode) {
+                dragNode.x = mouseX;
+                dragNode.y = mouseY;
+                dragNode.vx = 0;
+                dragNode.vy = 0;
+            } else {
+                let found = null;
+                for (let node of graphNodes) {
+                    const dist = Math.sqrt((node.x - mouseX)**2 + (node.y - mouseY)**2);
+                    if (dist < node.radius + 5) {
+                        found = node;
+                        break;
+                    }
+                }
+                hoverNode = found;
+                canvas.style.cursor = found ? 'pointer' : 'grab';
+            }
+        }
+
+        function handleMouseUp() {
+            dragNode = null;
+            if (canvas) canvas.style.cursor = 'grab';
+        }
+
+        function handleDoubleClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left - transformX) / zoomScale;
+            const mouseY = (e.clientY - rect.top - transformY) / zoomScale;
+            
+            for (let node of graphNodes) {
+                const dist = Math.sqrt((node.x - mouseX)**2 + (node.y - mouseY)**2);
+                if (dist < node.radius + 5) {
+                    window.open(node.url, '_blank');
+                    break;
+                }
+            }
+        }
+
+        // On document ready, initialize event stream and pull current status
+        window.addEventListener('DOMContentLoaded', () => {
+            initEventStream();
+            
+            // Sync initial state from server
+            fetch('/api/status')
+            .then(res => res.json())
+            .then(data => {
+                if (data.stats.is_running) {
+                    updateStatusBadge(data.stats.is_paused ? 'paused' : 'running');
+                }
+                updateResultsData();
+            });
+        });
+    </script>
+</body>
+</html>
